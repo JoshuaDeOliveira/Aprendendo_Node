@@ -2,6 +2,11 @@ import mysql from 'mysql2/promise';
 import prompt from 'prompt-sync';
 import 'dotenv/config';
 
+//Função criada simplesmente para evitar repetição no teste do Tipo
+function TestarTipo(User){
+    const IdVerificar = Number(User)
+    return isNaN(IdVerificar)
+}
 
 async function TesteBanco() {
     var connection;
@@ -12,8 +17,10 @@ try {
         password: process.env.DBPASSWORD,
         database: process.env.DBDATABASE 
     })
-    
-    const Ação = prompt()('O que gostaria de fazer na tabela de amigos? (INSERIR, DELETAR, ATUALIZAR OU APENAS VISUALIZAR) ')
+
+    console.log('Conexão com a tabela estabelecida!')
+    console.log('Qual operação deseja realizar? [Deletar, cadastrar, Atualizar e Visualizar]')
+    const Ação = prompt()('Digite a escolha: ')
     const Escolha = Ação.toLowerCase()
 
     switch (Escolha) {
@@ -33,7 +40,7 @@ try {
                 console.log('Usuario não localizado no banco de dados')
             }
             break;
-        case 'inserir':
+        case 'cadastrar':
 
             const Nome = prompt()('Digite o seu nome: ')
             const idade = prompt()('Digite a sua idade: ')
@@ -54,7 +61,28 @@ try {
             break;
 
         case 'atualizar':
-            break;
+            var UsuarioEscolhido = prompt()('Digite o ID do usuario: ')
+
+            while (TestarTipo(UsuarioEscolhido)) {
+                console.log('ID incorreto, por favor digite novamente: ')
+                UsuarioEscolhido = prompt()('Digite o ID do usuario: ')
+                TestarTipo(UsuarioEscolhido)
+            }
+            
+            console.log('Insira abaixo os novos dados para atualizar!')
+            const NomeAtualizar = prompt()('Digite o nome: ')
+            const IdadeAtualizar = prompt()('Digite a idade: ')
+            const SexAtualizar = prompt()('Digite a sexualidade: ')
+
+            await connection.query(
+                `UPDATE meus_amigos
+                SET nomes = ?, idades = ?, sexualidade = ?
+                WHERE id = ?`, [NomeAtualizar, IdadeAtualizar, SexAtualizar, UsuarioEscolhido]
+            )
+
+            console.log('Informações atualizadas com sucesso')
+            
+            break
         case 'visualizar':
             const [Dados] = await connection.query(
                 'SELECT * FROM meus_amigos'
@@ -62,12 +90,16 @@ try {
             console.log('Esses são os dados da tabela ', Dados)
             break;
         default:
-            console.log('Comando incorreto, digite novamente')
-            break;
+            console.log('Comando não reconhecido! ')
+
+            const opcao = prompt()('Deseja realizar outro comando ou encerrar o sistema?')
+
+            console.log('Sistema Encerrado!')
+            break
     } 
 
 } catch (err) {
-    if (err.massage == 'ECONNREFUSED'){
+    if (err.code == 'ECONNREFUSED'){
         console.log('Não foi possivel estabelecer uma conexão ao banco')
     } else {
         console.log(`Esse é o codigo do erro encontrado ${err.code} e essa é a mensagem ${err.message}`)
