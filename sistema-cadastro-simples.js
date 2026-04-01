@@ -37,10 +37,12 @@ function ValidarId(UsuarioEscolhido){
         UsuarioEscolhido = prompt()('Digite o ID do usuario: ')
         TestarTipo(UsuarioEscolhido)
     }
+    return UsuarioEscolhido
 }
 
 async function TesteBanco() {
-    console.clear()
+
+    //console.clear()
 
     var connection;
 try {
@@ -53,14 +55,14 @@ try {
 
     console.log('Conexão com o banco estabelecida!')
     console.log('Tabela de amigos escolhida...!')
-    console.log('Qual operação deseja realizar? [Deletar, cadastrar, Atualizar e Visualizar]')
+    console.log('Qual operação deseja realizar? [Cadastrar, Visualizar, Atualizar e Deletar]')
     const Ação = prompt()('Digite a escolha: ')
     const Escolha = Ação.toLowerCase()
 
     switch (Escolha) {
         case 'deletar':
             const IdUser = prompt()('Digite o id do usuario a ser deletado: ')
-            DeletarDados(connection, IdUser)
+            await DeletarDados(connection, IdUser)
             break;
         case 'cadastrar':
             const Nome = prompt()('Digite o seu nome: ')
@@ -71,25 +73,20 @@ try {
                 VALUES (?, ?, ?)`, [Nome, idade, sexualidade]
             );
             console.log('Dados foram inseridos com sucesso!')
-            const [Respostas] = await connection.query(
-                'SELECT * FROM meus_amigos'
-            )
-            console.log(`esses dados foram inseridos`, Respostas)
             break;
-        case 'atualizar': //Corrigir problema na feature de atualização (Nota para mim mesmo dia 30/03 para dia 31/03)
+        case 'atualizar':
             var UsuarioEscolhido = prompt()('Digite o ID do usuario cadastrado: ')
-            var UsuarioExistente;
 
-            ValidarId(UsuarioEscolhido)
+            UsuarioEscolhido = ValidarId(UsuarioEscolhido)
 
-            UsuarioExistente = await connection.query(
+            var [UsuarioExistente] = await connection.query(
                 `SELECT * FROM meus_amigos WHERE id = ?`, [UsuarioEscolhido]
             )
 
-            if (UsuarioExistente.length == 0) {
+            if (UsuarioExistente.length <= 0) {
                 console.log('Usuario não encontrado')
                 console.log('Gostaria de Visualizar os usuarios cadastrados? [S/N]')
-                const opção = prompt()('').toLowerCase()
+                let opção = prompt()('').toLowerCase()
                 while(opção != 's' && opção != 'n'){
                     console.log('Comando não reconhecido! Por favor, insira [S] para visualizar tabela ou [N] para tentar novamente')
                     opção = prompt()('').toLowerCase()
@@ -100,12 +97,14 @@ try {
                     console.log(users)
                 }
 
-                while (UsuarioExistente.length == 0) {
-                    UsuarioEscolhido = prompt()('Digite o ID do usuario cadastrado: ')
-                    ValidarId(UsuarioEscolhido)
-                    UsuarioExistente = await connection.query(
-                        `SELECT * FROM meus_amigos WHERE id = ?`, [UsuarioEscolhido]
-                    )
+                while (UsuarioExistente.length <= 0) {
+                    UsuarioEscolhido = prompt()('Digite o ID de um usuario cadastrado: ')
+                    UsuarioEscolhido = ValidarId(UsuarioEscolhido);
+                    ([UsuarioExistente] = await connection.query(`SELECT * FROM meus_amigos WHERE id = ?`, [UsuarioEscolhido]))
+                    if (UsuarioExistente.length <= 0){
+                        console.log('ID não corresponde a nenhum usuario cadastrado!')
+                        console.log('Por favor, tente novamente!')
+                    }
                 }
             }
 
@@ -125,16 +124,16 @@ try {
 
         case 'visualizar':
             const Dados = await VisualizarBanco(connection)
-            console.log('Esses são os dados da tabela ', Dados)
+            console.log('Esses são os usuarios cadastrados ', Dados)
             break;
         default:
             console.log('Comando não reconhecido! ')
-            console.log('Deseja realizar outro comando? [S/N]')
+            console.log('Deseja tentar novamente? [S/N]')
 
             var opcao = prompt()('').toLowerCase()
 
             while(opcao != 's' && opcao != 'n'){
-                console.log('Comando não reconhecido! Por favor, insira [S] para executar outro comando ou [N] para sair do sistema')
+                console.log('Comando não reconhecido! Por favor, insira [S] para tentar novamente ou [N] para sair do sistema')
                 opcao = prompt()('').toLowerCase()
             }
 
@@ -142,13 +141,13 @@ try {
                 console.clear()
                 TesteBanco()
             } else {
-                console.log('Sistema Encerrado!')
+                console.log('Aguarde um minuto....!')
                 break
             }
     } 
 
-    console.log('Gostaria de Executar outra ação? [S/N]')
-    const simnao = prompt()('').toLowerCase()
+    console.log('Gostaria de Executar outra ação no sistema? [S/N]')
+    let simnao = prompt()('').toLowerCase()
 
     while(simnao != 's' && simnao != 'n'){
         console.log('Comando não reconhecido! Por favor, insira [S] para executar outra ação ou [N] para sair do sistema')
